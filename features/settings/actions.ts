@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getProfile() {
   const supabase = await createClient();
@@ -88,4 +89,25 @@ export async function updatePassword(newPassword: string) {
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);
+}
+
+export async function deleteAccount() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+
+  // Hapus row di public.users -> cascade ke semua data (akun, transaksi, goals, dll)
+  const { error: dbError } = await admin.from("users").delete().eq("id", user.id);
+  if (dbError) throw new Error(dbError.message);
+
+  // Hapus akun login-nya juga
+  const { error: authError } = await admin.auth.admin.deleteUser(user.id);
+  if (authError) throw new Error(authError.message);
+
+  await supabase.auth.signOut();
+  redirect("/login");
 }

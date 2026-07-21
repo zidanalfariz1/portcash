@@ -4,6 +4,7 @@ import { CategoryManager } from "@/features/settings/CategoryManager";
 import { AppearanceCard } from "@/features/settings/AppearanceCard";
 import { LogoutButton } from "@/features/settings/LogoutButton";
 import { PasswordCard } from "@/features/settings/PasswordCard";
+import { DangerZone } from "@/features/settings/DangerZone";
 
 export default async function SettingsPage() {
   const [profile, categories] = await Promise.all([
@@ -53,6 +54,14 @@ export default async function SettingsPage() {
           <p className="text-sm text-muted-foreground">Keluar dari sesi PortCash kamu.</p>
         </div>
         <LogoutButton />
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-base font-semibold text-destructive">Danger Zone</h2>
+          <p className="text-sm text-muted-foreground">Aksi permanen yang tidak bisa dibatalkan.</p>
+        </div>
+        <DangerZone />
       </div>
     </div>
   );
