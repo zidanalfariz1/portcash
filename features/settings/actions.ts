@@ -109,5 +109,4 @@ export async function deleteAccount() {
   if (authError) throw new Error(authError.message);
 
   await supabase.auth.signOut();
-  redirect("/login");
 }
