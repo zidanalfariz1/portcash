@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,9 +35,16 @@ export default function LoginPage() {
         return;
       }
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Kalau session null, berarti Supabase minta konfirmasi email dulu
+      if (!data.session) {
+        setAwaitingConfirmation(true);
         setLoading(false);
         return;
       }
@@ -56,61 +64,83 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <h1 className="mb-1 text-lg font-semibold">
-          {mode === "login" ? "Masuk ke akun kamu" : "Buat akun baru"}
-        </h1>
-        <p className="mb-6 text-sm text-muted-foreground">
-          {mode === "login"
-            ? "Track your wealth, not just your money."
-            : "Mulai pantau net worth kamu dalam satu dashboard."}
-        </p>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <Input
-            type="email"
-            placeholder="you@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-
-          {mode === "login" && (
-            <Link
-              href="/forgot-password"
-              className="text-xs text-muted-foreground hover:text-foreground self-end -mt-1"
+        {awaitingConfirmation ? (
+          <>
+            <h1 className="mb-1 text-lg font-semibold">Cek email kamu</h1>
+            <p className="text-sm text-muted-foreground">
+              Kami sudah kirim link konfirmasi ke <strong>{email}</strong>. Klik link itu
+              dulu buat mengaktifkan akun, baru bisa masuk.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setAwaitingConfirmation(false);
+                setMode("login");
+              }}
+              className="mt-4 text-xs text-muted-foreground hover:text-foreground"
             >
-              Lupa password?
-            </Link>
-          )}
+              Sudah konfirmasi? Masuk sekarang
+            </button>
+          </>
+        ) : (
+          <>
+            <h1 className="mb-1 text-lg font-semibold">
+              {mode === "login" ? "Masuk ke akun kamu" : "Buat akun baru"}
+            </h1>
+            <p className="mb-6 text-sm text-muted-foreground">
+              {mode === "login"
+                ? "Track your wealth, not just your money."
+                : "Mulai pantau net worth kamu dalam satu dashboard."}
+            </p>
 
-          {error && <p className="text-xs text-destructive">{error}</p>}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+              <Input
+                type="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+              />
 
-          <Button type="submit" disabled={loading} className="mt-1">
-            {loading
-              ? "Memproses..."
-              : mode === "login"
-                ? "Masuk"
-                : "Daftar"}
-          </Button>
-        </form>
+              {mode === "login" && (
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground self-end -mt-1"
+                >
+                  Lupa password?
+                </Link>
+              )}
 
-        <button
-          type="button"
-          onClick={() => setMode(mode === "login" ? "signup" : "login")}
-          className="mt-4 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {mode === "login"
-            ? "Belum punya akun? Daftar"
-            : "Sudah punya akun? Masuk"}
-        </button>
+              {error && <p className="text-xs text-destructive">{error}</p>}
+
+              <Button type="submit" disabled={loading} className="mt-1">
+                {loading
+                  ? "Memproses..."
+                  : mode === "login"
+                    ? "Masuk"
+                    : "Daftar"}
+              </Button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              className="mt-4 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {mode === "login"
+                ? "Belum punya akun? Daftar"
+                : "Sudah punya akun? Masuk"}
+            </button>
+          </>
+        )}
       </Card>
     </div>
   );
